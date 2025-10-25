@@ -8,6 +8,7 @@ import AddSupervisor from "./components/AddSupervisor";
 import CreateGroup from "./components/CreateGroup";
 import AddStudent from "./components/AddStudent";
 import UploadStudent from "./components/UploadStudent";
+import StudentDashboard from "./pages/StudentDashboard";
 
 function App() {
   const location = useLocation();
@@ -42,6 +43,8 @@ function App() {
           <Route path="students/upload" element={<UploadStudent />} />
 
         </Route>
+
+        <Route path="/student/dashboard" element={<StudentDashboard />}/>
       </Routes>
     </div>
   );

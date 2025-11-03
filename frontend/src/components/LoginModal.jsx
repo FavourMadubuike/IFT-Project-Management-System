@@ -27,7 +27,7 @@ const LoginModal = ({ isOpen, onClose, role }) => {
                 password.trim() === DUMMY_STUDENT_PASS
             ) {
                 const student = {
-                    name: "Madubuike Favour O.", //"Student " + matricNo,
+                    name: "Ebochue Wisdom C.", //"Student " + matricNo,
                     matric: DUMMY_STUDENT_MATRIC,
                 };
                 localStorage.setItem("student", JSON.stringify(student));

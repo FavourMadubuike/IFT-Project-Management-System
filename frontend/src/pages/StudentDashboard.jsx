@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from "react";
+import futoLogo from "../assets/futo-logo.png";
 import UploadModal from "../components/UploadModal";
+import { studentClient } from "../services/api";
 
 const StudentDashboard = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedChapter, setSelectedChapter] = useState("");
-  const [student, setStudent] = useState({ name: "", matric: "" })
+  const [student, setStudent] = useState(null);
   const [feedback, setFeedback] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
 
-  useEffect(() => {
-    const storedStudent = JSON.parse(localStorage.getItem("student"))
-    if (storedStudent) {
-      setStudent(storedStudent);
-    }
-    else {
-      setStudent({ name: "Guest", matric: "N/A" })
-    }
-  }, []);
-
-  const openUploadModal = (chapter) => {
+  // helper to open/close upload modal and set selected chapter
+  const openUploadModal = (chapter = "") => {
     setSelectedChapter(chapter);
     setIsUploadOpen(true);
   };
@@ -27,16 +24,25 @@ const StudentDashboard = () => {
     setSelectedChapter("");
   };
 
-  // simulate getting student feedback from backend (replace with real API later)
-  useEffect(() => {
-    const storedFeedback = [
-      { chapter: "Chapter 1-3", comment: "Great work! Your methodology is well structured." },
-      { chapter: "Chapter 4-5", comment: "Under review by supervisor." },
-    ];
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+      const res = await studentClient.getDashboard();
+      const payload = res.data || {};
+      setStudent(payload.student || null);
+      setProjects(payload.projects || []);
+      // derive feedback items from projects if present
+      const fb = (payload.projects || []).filter(p => p.feedback).map(p => ({ chapter: `Chapter ${p.chapter || 'N/A'}`, comment: p.feedback }));
+      setFeedback(fb);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setTimeout(() => {
-      setFeedback(storedFeedback);
-    }, 500);
+  useEffect(() => {
+    fetchDashboard();
   }, []);
 
   // SVG ICONS
@@ -61,21 +67,73 @@ const StudentDashboard = () => {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 8l4-4m-4 4L8 8" />
       </svg>
     ),
+    info: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M9 9h2v6H9V9z" />
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 110-12 6 6 0 010 12z" clipRule="evenodd" />
+      </svg>
+    ),
   };
+  // show loading / error states early to avoid rendering when data not ready
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center"> 
+        <p className="text-gray-600">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center"> 
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8">
+    <div className="min-h-screen bg-gray-50 pt-24 px-4 sm:px-8"> 
+      {/* Small fixed header shown when app navbar is hidden */}
+      <div className="fixed top-0 left-0 w-full bg-white shadow-sm z-50">
+        <div className="container mx-auto flex items-center justify-between px-6 sm:px-4 py-3">
+          <div className="flex items-center gap-3">
+            <img src={futoLogo} alt="logo" className="h-8 w-8" />
+            <span className="font-bold text-green-700">IFT Project Management</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-gray-700">{student?.name ?? ''}</div>
+            <button
+              onClick={() => { localStorage.removeItem('token'); window.location.href = '/'; }}
+              className="text-sm border border-green-700 text-green-700 px-3 py-1 rounded hover:bg-green-50"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Upload success message */}
+      {uploadSuccess && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-40">
+          <div className="bg-green-100 text-green-800 border border-green-200 px-4 py-2 rounded shadow">
+            {uploadSuccess}
+          </div>
+        </div>
+      )}
+
+      <div className="pt-2">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-3">
         <div>
           <h1 className="text-2xl font-bold text-green-800 flex items-center gap-2">
-            Welcome Back, {student.name || "student"}
+            Welcome Back, {student?.name ?? "student"}
           </h1>
           <p className="text-gray-600">Track and manage your project submissions</p>
         </div>
 
         <div className="text-right mt-3 sm:mt-0">
-          <p className="text-gray-500 text-sm">Matric: {student.matric}</p>
+          <p className="text-gray-500 text-sm">Matric: {student?.matricNumber ?? "-"}</p>
+          <p className="text-gray-500 text-sm">Supervisor: {student?.supervisorId?.name ?? "No supervisor assigned"}</p>
         </div>
       </div>
 
@@ -176,9 +234,28 @@ const StudentDashboard = () => {
       <UploadModal
         isOpen={isUploadOpen}
         onClose={closeUploadModal}
-        onUpload={(data) => console.log(`Uploaded for ${selectedChapter}:`, data)}
+        onUpload={async ({ projectTitle, description, file }) => {
+          try {
+            const formData = new FormData();
+            formData.append('title', projectTitle);
+            formData.append('description', description);
+            formData.append('file', file);
+            // chapter selection currently not wired server-side; you can add if needed
+            await studentClient.uploadProject(formData);
+            // refresh dashboard
+            await fetchDashboard();
+            // show success message and close modal
+            setUploadSuccess('Upload successful');
+            setTimeout(() => setUploadSuccess(''), 3000);
+            closeUploadModal();
+          } catch (err) {
+            console.error('Upload failed', err);
+            alert(err.response?.data?.message || err.message || 'Upload failed');
+          }
+        }}
       />
     </div>
+  </div>
   );
 };
 

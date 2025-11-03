@@ -93,6 +93,16 @@ export default function SideBar({onNavigate}) {
 
               <li>
                 <Link
+                  to="/admin/supervisors/manage"
+                  onClick={onNavigate}
+                  className={`${baseClass} text-sm font-semibold ${location.pathname === "/admin/supervisors/manage" ? activeClass : ""
+                  }`}>
+                  Manage Supervisors
+                </Link>
+              </li>
+
+              <li>
+                <Link
                   to="/admin/supervisors/view"
                   onClick={onNavigate}
                   className={`${baseClass} text-sm font-semibold ${location.pathname === "/admin/supervisors/view" ? activeClass : ""
@@ -145,6 +155,16 @@ export default function SideBar({onNavigate}) {
                   className={`${baseClass} text-sm font-semibold ${location.pathname === "/admin/students/assign" ? activeClass : ""
                   }`}>
                   Assign to Group
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/admin/students/manage"
+                  onClick={onNavigate}
+                  className={`${baseClass} text-sm font-semibold ${location.pathname === "/admin/students/manage" ? activeClass : ""
+                  }`}>
+                  Manage Students
                 </Link>
               </li>
 

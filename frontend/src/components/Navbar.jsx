@@ -51,6 +51,10 @@ const Navbar = () => {
                 <div className="relative">
                     <button
                         onClick={() => setIsLoginOpen(!isLoginOpen)}
+<<<<<<< HEAD
+                        // onMouseLeave={() => setIsLoginOpen(false)}
+=======
+>>>>>>> origin/master
                         className="border border-green-700 rounded-lg px-6 py-2 text-green-700 font-bold hover:bg-green-700 hover:text-white transition"
                     >Login
                     </button>
